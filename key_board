@@ -1,0 +1,116 @@
+
+module key_board (clk,row,col,rst_n,key_data,key_flag);
+
+	 input  	clk,rst_n;
+	 input  	[3:0]row;
+ 
+    output  reg	[3:0]col;
+	 output  reg	key_data;
+	 output  reg	key_flag;
+	 
+	 reg [15:0] cnt;
+	 parameter T = 25000;
+	 reg clk_ms;
+	 
+	always @ (posedge clk or negedge rst_n) begin
+		if(!rst_n) begin
+			cnt <= 0;
+			clk_ms <= 0;
+		end else if(cnt < T - 1) begin
+					cnt <= cnt + 1;
+					
+		end else begin
+					cnt <= 0;
+					clk_ms = !clk_ms;
+		end
+	end
+	 
+	 reg [1:0] state;
+	 reg [3:0] cnt_filter;
+	 reg [7:0] coordinate;
+	 
+	 always @(posedge clk_ms or negedge rst_n)begin
+		if (!rst_n) begin
+			state <= 0;
+			cnt_filter <= 0;
+			coordinate <= 0;
+			col <= 4'b0000;
+			key_flag <= 0;
+		end
+				else case(state)
+						0 : begin
+							if (row == 4'b1111) begin
+								state <= 0;
+								cnt_filter <= 0;
+								coordinate <= 0;
+								col <= 4'b0000;
+								key_flag <= 0;
+							end else if(cnt_filter < 9)
+											cnt_filter <= cnt_filter +1;
+								 else begin
+											cnt_filter <= 0;
+											col <= 4'b0111 ; 
+											state <= 1;
+								 end
+							
+						
+						end
+						1  :	begin
+							if(row == 4'b1111)	
+									col <= {col[2:0],col[3]};
+							else begin
+									state <= 2;
+									coordinate <= {row,col};
+									key_flag <= 1;
+									col <= 4'b0000;
+							end
+							
+						end
+						
+						2	:	begin 
+								key_flag <= 0;
+								if (row != 4'b1111) begin
+									state <= 2;
+									cnt_filter <= 0;
+									
+								end else begin
+									state <= 0;
+									cnt_filter <= 0;
+								
+								end
+									
+						end	
+					
+					default state <= 0;
+				endcase	
+	 end
+
+	always @ (*)  begin
+		if (!rst_n)
+			key_data <=0 ;
+		else  case(coordinate)
+					8'b1110_1110 : key_data = 4'h0;
+					8'b1110_1101 : key_data = 4'h1;
+					8'b1110_1011 : key_data = 4'h2;
+					8'b1110_0111 : key_data = 4'h3;
+					
+					8'b1101_1110 : key_data = 4'h4;
+					8'b1101_1101 : key_data = 4'h5;
+					8'b1101_1011 : key_data = 4'h6;
+					8'b1101_0111 : key_data = 4'h7;
+					
+					8'b1011_1110 : key_data = 4'h8;
+					8'b1011_1101 : key_data = 4'h9;
+					8'b1011_1011 : key_data = 4'ha;
+					8'b1011_0111 : key_data = 4'hb;
+					
+					8'b0111_1110 : key_data = 4'hc;
+					8'b0111_1101 : key_data = 4'hd;
+					8'b0111_1011 : key_data = 4'he;
+					8'b0111_0111 : key_data = 4'hf;
+					
+					default : key_data = 0;
+
+		endcase
+	end 
+endmodule 
